@@ -27,8 +27,7 @@ router.get('/take/:playerId/:points', (req, res, next) => {
             })
         })
     } else {
-        res.status(500);
-        next(err);
+        res.status(500).end();
     }
 });
 
@@ -42,8 +41,7 @@ router.get('/fund/:playerId/:points', (req, res, next) => {
         res.end();
     })
     .catch(err => {
-        res.status(500);
-        next(err);
+        res.status(500).end();
     })
 });
 
