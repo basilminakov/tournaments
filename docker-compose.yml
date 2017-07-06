@@ -1,0 +1,26 @@
+version: '2'
+services:
+
+  app:
+    image: basilminakov/tournamentsback:3
+    depends_on:
+      - mysql
+    ports:
+      - 0.0.0.0:3000:3000
+    environment:
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASS: ${DB_PASS}
+      PORT: ${PORT}
+      MYSQL_HOST: ${MYSQL_HOST}
+    restart: on-failure:3
+
+  mysql:
+    image: mysql:5.7
+    ports:
+      - 0.0.0.0:3306:3306
+    environment:
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_ROOT_PASSWORD: ${DB_PASS}
+    restart: on-failure:3
