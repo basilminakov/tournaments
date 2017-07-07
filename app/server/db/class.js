@@ -146,30 +146,47 @@ updatePlayer = (player) => {
 }
 
 updatePlayers = (players) => {
-  var sql = 'update ' + process.env.DB_NAME + '.users set balance=? where id=?;';
-  var count = players.length;
-  var savedCount = 0;
-  var results = [];
   return new Promise((resolve, reject) => {
     pool.getConnection((err, connection) => {
       if (err) {
         reject(err);
       }
-      players.forEach(player => {
-        connection.query(sql, [player.getBalance(), player.getId()], (err, result) => {
-          if (err) {
-            reject(err);
-          }
-          savedCount++;
-          results.push(result);
-          if (savedCount == count) {
-            connection.release();
-            resolve(results);
-          }
-        })
-      })
+      _doPlayersUpdate(players, connection, resolve, reject);
     });
   })
+}
+
+  _doPlayersUpdate = (players, connection, resolve, reject) => {
+    var count = players.length;
+    var savedCount = 0;
+    var results = [];
+    var sql = 'update ' + process.env.DB_NAME + '.users set balance=? where id=?;';
+    connection.beginTransaction((err) => {
+      if (err) { 
+        reject(err);
+      }
+      players.forEach(player => {
+        connection.query(sql, [player.getBalance(), player.getId()], (err, result) => {
+        if (err) {
+          connection.rollback();
+          reject(err);
+        }
+        savedCount++;
+        results.push(result);
+        if (savedCount == count) {
+          connection.commit(err => {
+            if (err) {
+              connection.rollback();
+              connection.release();
+              reject(err);
+            }
+            connection.release();
+            resolve(results);
+          })
+        }
+      })
+    })
+  });
 }
 
 createTournament = (id, deposit) => {

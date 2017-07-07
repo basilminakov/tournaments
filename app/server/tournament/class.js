@@ -20,7 +20,7 @@ class Tournament {
         return this.deposit;
     }
 
-    isCosed() {
+    isClosed() {
         return this.closed;
     }
 

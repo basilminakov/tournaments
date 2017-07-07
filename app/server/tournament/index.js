@@ -33,7 +33,7 @@ router.get('/joinTournament/:tournamentId/:playerId/*', (req, res, next) => {
     let tournament = new Tournament(tournamentId);
     tournament.loadFromDB()
     .then(() => {
-        if (tournament.isCosed()) {
+        if (tournament.isClosed()) {
             res.status(500).end();
             return;
         }
@@ -53,7 +53,7 @@ router.post('/resultTournament', (req, res, next) => {
     let tournament = new Tournament(tournamentId);
     tournament.loadFromDB()
     .then(() => {
-        if (tournament.isCosed()) {
+        if (tournament.isClosed()) {
             res.status(500);
             res.end();
             return;
