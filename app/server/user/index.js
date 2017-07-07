@@ -26,6 +26,10 @@ router.get('/take/:playerId/:points', (req, res, next) => {
                 res.end();
             })
         })
+        .catch(err => {
+            console.log(new Date(), err);
+            res.status(500).end();
+        })
     } else {
         res.status(500).end();
     }
