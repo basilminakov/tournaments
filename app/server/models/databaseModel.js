@@ -15,6 +15,7 @@ var isServerReady = false;
 
 doPing = () => {
   return new Promise((resolve, reject) => {
+    console.log('Calling ping routine...');
     pool.getConnection((err, conn) => {
       if (conn) {
         connection = conn;
@@ -24,27 +25,30 @@ doPing = () => {
             reject(false);
           }
           resolve(true);
+          return;
         });
       }
     })
   });
 }
-  
-while (isServerReady != true) {
-  doPing()
-    .then((value) => {
-      isServerReady = isServerReady || value;
-      console.log("MySQL is up:", isServerReady);
-    })
-    .catch(err => {
-      console.error(err);
-    });
-    sleep(4000);
+
+exports.checkHealth = () => {  
+  while (isServerReady != true) {
+    doPing()
+      .then((value) => {
+        isServerReady = isServerReady || value;
+        console.log("MySQL is up:", isServerReady);
+      })
+      .catch(err => {
+        console.error(err);
+      });
+      sleep(4000);
+  }
 }
 
-createTables = () => {
+exports.createTables = () => {
   var fs = require('fs');
-  var sql = fs.readFileSync(__dirname + '/../../assets/sql/createTables.sql', 'utf8');
+  var sql = fs.readFileSync(__dirname + '/../assets/sql/createTables.sql', 'utf8');
   return new Promise((resolve, reject) => {
     pool.getConnection((err, connection) => {
       if (err) {
@@ -61,11 +65,7 @@ createTables = () => {
   })
 };
 
-createTables().then().catch(err => {
-  console.error(err);
-})
-
-getPlayersInfo = (playersId) => {
+exports.getPlayersInfo = (playersId) => {
   var sql = typeof playersId === 'string' ? 'select * from ' + process.env.DB_NAME + '.users where id=?;'
     : 'select * from ' + process.env.DB_NAME + '.users where id in (?);';
   var ids = typeof playersId === 'string' ? mysql.escape(playersId) : playersId.map(id => mysql.escape(id)).join(',');
@@ -88,7 +88,7 @@ getPlayersInfo = (playersId) => {
   });
 };
 
-getTournamentInfo = (id) => {
+exports.getTournamentInfo = (id) => {
   var sql = 'select * from ' + process.env.DB_NAME + '.tournaments where id=?;';
   return new Promise((resolve, reject) => {
     pool.getConnection((err, connection) => {
@@ -108,7 +108,7 @@ getTournamentInfo = (id) => {
   });
 };
 
-createPlayer = (playerId, balance) => {
+exports.createPlayer = (playerId, balance) => {
   var sql = 'insert into ' + process.env.DB_NAME + '.users (id, balance) values (?,?)';
   return new Promise((resolve, reject) => {
     pool.getConnection((err, connection) => {
@@ -127,7 +127,7 @@ createPlayer = (playerId, balance) => {
   });
 };
 
-updatePlayer = (player) => {
+exports.updatePlayer = (player) => {
   var sql = 'update ' + process.env.DB_NAME + '.users set balance=? where id=?;';
   return new Promise((resolve, reject) => {
     pool.getConnection((err, connection) => {
@@ -145,7 +145,7 @@ updatePlayer = (player) => {
   })
 }
 
-updatePlayers = (players) => {
+exports.updatePlayers = (players) => {
   return new Promise((resolve, reject) => {
     pool.getConnection((err, connection) => {
       if (err) {
@@ -189,7 +189,7 @@ updatePlayers = (players) => {
   });
 }
 
-createTournament = (id, deposit) => {
+exports.createTournament = (id, deposit) => {
   var sql = 'insert into ' + process.env.DB_NAME + '.tournaments (id, deposit) values(?, ?);';
   return new Promise((resolve, reject) => {
     pool.getConnection((err, connection) => {
@@ -208,7 +208,7 @@ createTournament = (id, deposit) => {
   })
 }
 
-joinPlayers = (player, backers, id) => {
+exports.joinPlayers = (player, backers, id) => {
   let sqlLines = [];
   let playerId = mysql.escape(player);
   let tournamentId = mysql.escape(id);
@@ -235,7 +235,7 @@ joinPlayers = (player, backers, id) => {
   });
 }
 
-registerWinners = (items, id) => {
+exports.registerWinners = (items, id) => {
   let count = items.length;
   let sql = 'insert into ' + process.env.DB_NAME + '.winners (userId, prize, tournamentId) values (?, ?, ?)';
   var savedCount = 0;
@@ -268,7 +268,7 @@ registerWinners = (items, id) => {
   })
 }
 
-getWinners = (groupLeaderId, tournamentId) => {
+exports.getWinners = (groupLeaderId, tournamentId) => {
   let sql = 'select id, balance from ' + process.env.DB_NAME + '.users left join ' + process.env.DB_NAME + '.players on (users.id = players.playerId) where (isBacker = 1 and tournamentId = ? and backerFor = ?) or (playerId = ?)';
   return new Promise((resolve, reject) => {
     pool.getConnection((err, connection) => {
@@ -287,9 +287,9 @@ getWinners = (groupLeaderId, tournamentId) => {
   });
 }
 
-resetDB = () => {
+exports.resetDB = () => {
   var fs = require('fs');
-  var sql = fs.readFileSync(__dirname + '/../../assets/sql/dropTables.sql', 'utf8');
+  var sql = fs.readFileSync(__dirname + '/../assets/sql/dropTables.sql', 'utf8');
   return new Promise((resolve, reject) => {
     pool.getConnection((err, connection) => {
       if (err) {
@@ -305,17 +305,3 @@ resetDB = () => {
     })
   })
 }
-
-module.exports = {
-  resetDB: resetDB,
-  createTables: createTables,
-  getPlayersInfo: getPlayersInfo,
-  getTournamentInfo: getTournamentInfo,
-  createPlayer: createPlayer,
-  updatePlayer: updatePlayer,
-  updatePlayers: updatePlayers,
-  createTournament: createTournament,
-  joinPlayers: joinPlayers,
-  registerWinners: registerWinners,
-  getWinners: getWinners
-};
