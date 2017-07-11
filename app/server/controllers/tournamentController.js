@@ -26,7 +26,7 @@ exports.joinTournament = (req, res, next) => {
   tournament.loadFromDB()
     .then(() => {
       if (tournament.isClosed()) {
-        res.status(500).end();
+        res.status(400).send('Unable to work with completed tournament').end();
         return;
       }
       tournament.addPlayers(playerId, backers)

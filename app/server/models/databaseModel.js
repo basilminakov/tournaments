@@ -42,7 +42,7 @@ exports.checkHealth = () => {
       .catch(err => {
         console.error(err);
       });
-      sleep(4000);
+      sleep(3000);
   }
 }
 
@@ -156,35 +156,46 @@ exports.updatePlayers = (players) => {
   })
 }
 
-  _doPlayersUpdate = (players, connection, resolve, reject) => {
-    var count = players.length;
-    var savedCount = 0;
-    var results = [];
-    var sql = 'update ' + process.env.DB_NAME + '.users set balance=? where id=?;';
-    connection.beginTransaction((err) => {
-      if (err) { 
+exports.getConnection = () => {
+  return new Promise((resolve, reject) => {
+    pool.getConnection((err, conn) => {
+      if (err || !conn) {
+        reject(err);
+      } else {
+        resolve(conn);
+      }
+    })
+  })
+}
+
+_doPlayersUpdate = (players, connection, resolve, reject) => {
+  var count = players.length;
+  var savedCount = 0;
+  var results = [];
+  var sql = 'update ' + process.env.DB_NAME + '.users set balance=? where id=?;';
+  connection.beginTransaction((err) => {
+    if (err) { 
+      reject(err);
+    }
+    players.forEach(player => {
+      connection.query(sql, [player.getBalance(), player.getId()], (err, result) => {
+      if (err) {
+        connection.rollback();
         reject(err);
       }
-      players.forEach(player => {
-        connection.query(sql, [player.getBalance(), player.getId()], (err, result) => {
-        if (err) {
-          connection.rollback();
-          reject(err);
-        }
-        savedCount++;
-        results.push(result);
-        if (savedCount == count) {
-          connection.commit(err => {
-            if (err) {
-              connection.rollback();
-              connection.release();
-              reject(err);
-            }
+      savedCount++;
+      results.push(result);
+      if (savedCount == count) {
+        connection.commit(err => {
+          if (err) {
+            connection.rollback();
             connection.release();
-            resolve(results);
-          })
-        }
-      })
+            reject(err);
+          }
+          connection.release();
+          resolve(results);
+        })
+      }})
     })
   });
 }

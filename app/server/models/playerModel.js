@@ -58,7 +58,8 @@ class Player {
   initPlayer(id, balance) {
     return new Promise((resolve, reject) => {
       if (!id) {
-        return reject('No ID provided for new user!');
+        reject('No ID provided for new user!');
+        return;
       }
       if (id.length > USER_ID_SIZE) {
         id = id.substr(0, USER_ID_SIZE);
